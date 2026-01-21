@@ -7,10 +7,14 @@ const path = require('path');
 const app = express();
 const PORT = 3001;
 
-// Determine if running on Vercel (read-only source, writable /tmp)
+// Determine if running on Vercel
 const IS_VERCEL = process.env.VERCEL === '1';
-const SOURCE_FILE = path.join(__dirname, 'products.json');
-const DATA_FILE = IS_VERCEL ? '/tmp/products.json' : SOURCE_FILE;
+
+// Import seed data directly to ensure it's bundled
+const seedData = require('./products.json');
+
+// On Vercel, use /tmp. Locally, use the file in place.
+const DATA_FILE = IS_VERCEL ? '/tmp/products.json' : path.join(__dirname, 'products.json');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -19,9 +23,9 @@ app.use(bodyParser.json());
 const initializeData = () => {
     if (IS_VERCEL && !fs.existsSync(DATA_FILE)) {
         try {
-            const seedData = fs.readFileSync(SOURCE_FILE, 'utf8');
-            fs.writeFileSync(DATA_FILE, seedData);
-            console.log("Initialized /tmp/products.json from source.");
+            // Write the bundled seedData to /tmp
+            fs.writeFileSync(DATA_FILE, JSON.stringify(seedData, null, 2));
+            console.log("Initialized /tmp/products.json from bundled seed data.");
         } catch (err) {
             console.error("Failed to initialize data:", err);
         }
@@ -31,16 +35,17 @@ const initializeData = () => {
 // Helper to read data
 const readData = () => {
     try {
-        if (IS_VERCEL) initializeData(); // Ensure exists before read
+        if (IS_VERCEL) initializeData();
 
         if (!fs.existsSync(DATA_FILE)) {
-            return [];
+            // Fallback to in-memory seed if file system fails
+            return seedData;
         }
         const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (err) {
         console.error("Error reading data:", err);
-        return [];
+        return seedData; // Fail safe
     }
 };
 
