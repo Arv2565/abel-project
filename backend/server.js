@@ -6,14 +6,33 @@ const path = require('path');
 
 const app = express();
 const PORT = 3001;
-const DATA_FILE = path.join(__dirname, 'products.json');
+
+// Determine if running on Vercel (read-only source, writable /tmp)
+const IS_VERCEL = process.env.VERCEL === '1';
+const SOURCE_FILE = path.join(__dirname, 'products.json');
+const DATA_FILE = IS_VERCEL ? '/tmp/products.json' : SOURCE_FILE;
 
 app.use(cors());
 app.use(bodyParser.json());
 
+// Initialize data in /tmp if needed
+const initializeData = () => {
+    if (IS_VERCEL && !fs.existsSync(DATA_FILE)) {
+        try {
+            const seedData = fs.readFileSync(SOURCE_FILE, 'utf8');
+            fs.writeFileSync(DATA_FILE, seedData);
+            console.log("Initialized /tmp/products.json from source.");
+        } catch (err) {
+            console.error("Failed to initialize data:", err);
+        }
+    }
+};
+
 // Helper to read data
 const readData = () => {
     try {
+        if (IS_VERCEL) initializeData(); // Ensure exists before read
+
         if (!fs.existsSync(DATA_FILE)) {
             return [];
         }
