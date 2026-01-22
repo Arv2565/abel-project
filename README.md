@@ -1,6 +1,6 @@
 # Product Inventory — Summary
 
-IMPORTANT: DO NOT BUILD OR DEPLOY THIS PROJECT UNLESS YOU HAVE EXPLICIT APPROVAL.
+
 
 ## Project Overview
 A minimal full‑stack exercise demonstrating:
